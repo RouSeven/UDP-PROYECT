@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat UDP</title>
+  <style>
+    body { font-family: sans-serif; background: #f0f0f0; padding: 2em; }
+    #chat { border: 1px solid #ccc; padding: 1em; height: 300px; overflow-y: auto; background: white; }
+    input { width: 80%; padding: 0.5em; }
+    button { padding: 0.5em; }
+  </style>
+</head>
+<body>
+  <h1>Chat UDP vía Web</h1>
+  <div id="chat"></div>
+  <input type="text" id="msg" placeholder="Escribe un mensaje..." />
+  <button onclick="sendMessage()">Enviar</button>
+
+  <script>
+    const ws = new WebSocket('ws://localhost:3000');
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('msg');
+
+    ws.onmessage = (event) => {
+      chat.innerHTML += `<div><b>Servidor:</b> ${event.data}</div>`;
+      chat.scrollTop = chat.scrollHeight;
+    };
+
+    function sendMessage() {
+      const msg = input.value;
+      chat.innerHTML += `<div><b>Tú:</b> ${msg}</div>`;
+      ws.send(msg);
+      input.value = '';
+    }
+  </script>
+</body>
+</html>
