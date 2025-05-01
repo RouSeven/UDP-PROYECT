@@ -1,0 +1,7 @@
+node_modules/
+*.o
+*.out
+server
+client
+.DS_Store
+.env

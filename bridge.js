@@ -9,8 +9,8 @@ const wss = new WebSocket.Server({ noServer: true });
 const udpClient = dgram.createSocket('udp4');
 
 const UDP_PORT = 4950;
-const UDP_HOST = '192.168.1.100'; // IP del servidor en C
-
+const UDP_HOST = '192.168.1.2'; // IP del servidor en C
+  
 // Servir los archivos HTML/JS/CSS
 app.use(express.static(path.join(__dirname, 'public')));
 
