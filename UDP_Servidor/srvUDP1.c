@@ -186,10 +186,8 @@ main(int argc, char *argv[])
 	  printf("Enviados: %d bytes:--%s--\n",numbytes, buffer);
 	  
 	}
-	
-	
   }while(strcmp(buf,"CLOSE"));
   /* devolvemos recursos al sistema */ 
   close(sockfd); 
 
-} 
+	} 
