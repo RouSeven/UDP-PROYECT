@@ -1,4 +1,3 @@
-// bridge.js
 const express = require('express');
 const WebSocket = require('ws');
 const dgram = require('dgram');
@@ -10,23 +9,24 @@ const wss = new WebSocket.Server({ noServer: true });
 const udpClient = dgram.createSocket('udp4');
 
 const UDP_PORT = 4950;
-const UDP_HOST = '192.168.1.2'; // Cambia esta IP si es necesario
+const UDP_HOST = '192.168.1.2'; // Cambia esta IP a la de tu servidor C
 
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Servir archivos con lógica de visualización/descarga
+// Servir archivos en /uploads (mostrar imagenes, forzar descarga en otros)
 app.get('/uploads/:filename', (req, res) => {
   const filePath = path.join(uploadsDir, req.params.filename);
   const ext = path.extname(filePath).toLowerCase();
   const imageTypes = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 
   if (imageTypes.includes(ext)) {
-    res.sendFile(filePath); // mostrar imágenes
+    res.sendFile(filePath); // mostrar en navegador
   } else {
     res.download(filePath); // forzar descarga
   }
@@ -46,7 +46,7 @@ const clients = new Set();
 
 wss.on('connection', ws => {
   clients.add(ws);
-  console.log('Cliente conectado.');
+  console.log('Nuevo cliente WebSocket conectado.');
 
   ws.on('message', msg => {
     try {
@@ -58,13 +58,20 @@ wss.on('connection', ws => {
         const filePath = path.join(uploadsDir, safeName);
         fs.writeFileSync(filePath, decoded);
 
+        const notifyMessage = `[${parsed.username}] envió archivo: ${parsed.filename}`;
+        udpClient.send(notifyMessage, UDP_PORT, UDP_HOST, err => {
+          if (err) console.error('Error al notificar al servidor C:', err);
+        });
+
         const ext = path.extname(parsed.filename).toLowerCase();
         const publicURL = `/uploads/${safeName}`;
         const imageTypes = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 
         let htmlMessage = "";
         if (imageTypes.includes(ext)) {
-          htmlMessage = `[${parsed.username}] envió una imagen:<br><img src="${publicURL}" style="max-width:200px;" />`;
+          htmlMessage = `[${parsed.username}] envió una imagen:<br>
+            <img src="${publicURL}" style="max-width:200px;" /><br>
+            <a href="${publicURL}" download>Descargar imagen</a>`;
         } else {
           htmlMessage = `[${parsed.username}] envió archivo: <a href="${publicURL}" download>${parsed.filename}</a>`;
         }
@@ -75,18 +82,26 @@ wss.on('connection', ws => {
           }
         }
 
-        udpClient.send(`[${parsed.username}] envió archivo: ${parsed.filename}`, UDP_PORT, UDP_HOST);
       } else {
-        udpClient.send(Buffer.from(msg), UDP_PORT, UDP_HOST);
+        // Mensaje de texto simple
+        const buffer = Buffer.from(msg);
+        udpClient.send(buffer, UDP_PORT, UDP_HOST, err => {
+          if (err) console.error('Error al enviar al servidor C:', err);
+        });
       }
 
     } catch (err) {
-      udpClient.send(Buffer.from(msg), UDP_PORT, UDP_HOST);
+      // Si no es JSON, tratarlo como texto
+      const buffer = Buffer.from(msg);
+      udpClient.send(buffer, UDP_PORT, UDP_HOST, err => {
+        if (err) console.error('Error al enviar al servidor C:', err);
+      });
     }
   });
 
   ws.on('close', () => {
     clients.delete(ws);
+    console.log('Cliente desconectado.');
   });
 });
 
