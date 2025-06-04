@@ -9,10 +9,11 @@ const uploadBtn = document.getElementById("uploadBtn");
 ws.onmessage = (event) => {
   const p = document.createElement("p");
   p.classList.add("mb-1");
-  p.textContent = event.data;
+  p.innerHTML = event.data; // ✅ ahora sí se mostrará HTML (img, link, etc.)
   chatLog.appendChild(p);
   chatLog.scrollTop = chatLog.scrollHeight;
 };
+
 
 sendBtn.addEventListener("click", () => {
   const username = usernameInput.value.trim();
